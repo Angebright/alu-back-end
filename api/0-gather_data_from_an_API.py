@@ -1,54 +1,29 @@
 #!/usr/bin/python3
 """
-    Python script that returns TODO list progress for a given employee ID
+Python script that, using a REST API, returns information
+about an employee’s TODO list progress.
 """
-import json
 import requests
-from sys import argv
+import sys
 
 
 if __name__ == "__main__":
-    """
-        Request user info by employee ID
-    """
-    request_employee = requests.get(
-        'https://jsonplaceholder.typicode.com/users/{}/'.format(argv[1]))
-    """
-        Convert JSON to dictionary
-    """
-    employee = json.loads(request_employee.text)
-    """
-        Extract employee name
-    """
-    employee_name = employee.get("name")
+    employee_id = sys.argv[1]
+    url = "https://jsonplaceholder.typicode.com/"
 
-    """
-        Request user's TODO list
-    """
-    request_todos = requests.get(
-        'https://jsonplaceholder.typicode.com/users/{}/todos'.format(argv[1]))
-    """
-        Dictionary to store task status in boolean format
-    """
-    tasks = {}
-    """
-        Convert JSON to list of dictionaries
-    """
-    employee_todos = json.loads(request_todos.text)
-    """
-        Loop through dictionary and get completed tasks
-    """
-    for dictionary in employee_todos:
-        tasks.update({dictionary.get("title"): dictionary.get("completed")})
+    # Get employee data
+    user = requests.get(url + "users/{}".format(employee_id)).json()
+    employee_name = user.get("name")
 
-    """
-        Return name, total number of tasks and completed tasks
-    """
-    EMPLOYEE_NAME = employee_name
-    TOTAL_NUMBER_OF_TASKS = len(tasks)
-    NUMBER_OF_DONE_TASKS = len([k for k, v in tasks.items() if v is True])
-    print("Employee {} is done with tasks({}/{}):".format(
-        EMPLOYEE_NAME, NUMBER_OF_DONE_TASKS, TOTAL_NUMBER_OF_TASKS))
-    for k, v in tasks.items():
-        if v is True:
-            print("\t {}".format(k))
+    # Get employee todos
+    todos = requests.get(url + "todos", params={"userId": employee_id}).json()
+
+    # Extract completed tasks
+    completed_tasks = [task for task in todos if task.get("completed")]
+
+    # Display formatted output
+    print("Employee {} is done with tasks({}/{}):"
+          .format(employee_name, len(completed_tasks), len(todos)))
+
+    for task in completed_tasks:
+        print("\t {}".format(task.get("title")))
